@@ -15,7 +15,16 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class MtgPriceUpdaterApplication implements CommandLineRunner{
 
-	final static String queueName = "mtg-price-update";
+	private final static String QUEUE = "mtg-price-update";
+	private final static String PRICE_UPDATE_ABDUCTION = "{\n" +
+			"\t\"card-id\" : \"abduction\",\n" +
+			"\t\"edition-id\" : \"WTH\",\n" +
+			"\t\"price\" : {\n" +
+			"\t\t\"low\" : 1,\n" +
+			"\t\t\"median\" : 6,\n" +
+			"\t\t\"high\" : 14\n" +
+			"    }\n" +
+			"}";
 
 	@Autowired
 	AnnotationConfigApplicationContext context;
@@ -25,17 +34,17 @@ public class MtgPriceUpdaterApplication implements CommandLineRunner{
 
 	@Bean
 	Queue queue() {
-		return new Queue(queueName, false);
+		return new Queue(QUEUE, false);
 	}
 
 	@Bean
 	TopicExchange exchange() {
-		return new TopicExchange("spring-boot-exchange");
+		return new TopicExchange("mtg-exchange");
 	}
 
 	@Bean
 	Binding binding(Queue queue, TopicExchange exchange) {
-		return BindingBuilder.bind(queue).to(exchange).with(queueName);
+		return BindingBuilder.bind(queue).to(exchange).with(QUEUE);
 	}
 
 	public static void main(String[] args) {
@@ -45,7 +54,7 @@ public class MtgPriceUpdaterApplication implements CommandLineRunner{
 	@Override
 	public void run(String... args) throws Exception {
 		System.out.println("Sending message...");
-		rabbitTemplate.convertAndSend(queueName, "Hello from RabbitMQ!");
+		rabbitTemplate.convertAndSend(QUEUE, PRICE_UPDATE_ABDUCTION);
 		context.close();
 	}
 }
