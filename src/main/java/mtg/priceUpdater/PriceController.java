@@ -31,7 +31,7 @@ public class PriceController {
     @Autowired
     private AmqpAdmin amqpAdmin;
 
-    @RequestMapping(value="/price", method = RequestMethod.GET)
+    @RequestMapping(value="/", method = RequestMethod.GET)
     public String sendPriceUpdate(Model model) {
         model.addAttribute("update", createDefaultPriceUpdate());
         return PRICE_UPDATE_TEMPLATE;
@@ -52,7 +52,7 @@ public class PriceController {
         return priceUpdate;
     }
 
-    @RequestMapping(value="/price", method = RequestMethod.POST)
+    @RequestMapping(value="/", method = RequestMethod.POST)
     public String addCardToCollection(@ModelAttribute PriceUpdate update, Model model) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         String priceUpdateAsJsonString = objectMapper.writerFor(PriceUpdate.class).writeValueAsString(update);
