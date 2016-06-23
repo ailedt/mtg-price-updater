@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 /**
  * Created by jbo on 21.06.2016.
@@ -26,10 +27,10 @@ public class PriceController {
     private static final String PRICE_UPDATE_TEMPLATE  = "priceUpdate";
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private AmqpAdmin amqpAdmin;
 
     @Autowired
-    private AmqpAdmin amqpAdmin;
+    private PriceUpdatePublisher priceUpdatePublisher;
 
     @RequestMapping(value="/", method = RequestMethod.GET)
     public String sendPriceUpdate(Model model) {
@@ -54,9 +55,7 @@ public class PriceController {
 
     @RequestMapping(value="/", method = RequestMethod.POST)
     public String addCardToCollection(@ModelAttribute PriceUpdate update, Model model) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String priceUpdateAsJsonString = objectMapper.writerFor(PriceUpdate.class).writeValueAsString(update);
-        rabbitTemplate.convertAndSend(MtgPriceUpdaterApplication.QUEUE, priceUpdateAsJsonString);
+        priceUpdatePublisher.publishPriceUpdate(update);
         model.addAttribute("update", new PriceUpdate());
         return PRICE_UPDATE_TEMPLATE;
     }
@@ -64,7 +63,11 @@ public class PriceController {
     @ResponseStatus(value = HttpStatus.OK)
     @RequestMapping(value="/purge", method = RequestMethod.GET)
     public void purgeUpdateQueue() {
-        amqpAdmin.purgeQueue(MtgPriceUpdaterApplication.QUEUE, false);
-        Logger.getGlobal().info("Message queue purged");
+        Stream
+                .of("queue-mtg-price-update-mtg-my-card-collection", "queue-mtg-price-update-mtg-card-catalogue")
+                .forEach(queue -> {
+                    amqpAdmin.purgeQueue(queue, false);
+                    Logger.getGlobal().info("Message queue " + queue + " purged");
+                });
     }
 }
